@@ -358,9 +358,9 @@ RRG..."></textarea>
             
             // セクションの区切り（最後のセクション以外）
             if (sectionIndex < sections.length - 1) {
-              svg += `<line x1="0" y1="${yOffset * this.cellSize - this.cellSize / 2}" 
-                          x2="${svgWidth}" y2="${yOffset * this.cellSize - this.cellSize / 2}" 
-                          stroke="#333" stroke-width="2" />`;
+              svg += `<line x1="0" y1="${yOffset * this.cellSize}" 
+                          x2="${svgWidth}" y2="${yOffset * this.cellSize}" 
+                          stroke="#888" stroke-width="2" stroke-dasharray="5,3" />`;
               yOffset++;
             }
           });
