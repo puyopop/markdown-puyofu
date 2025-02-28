@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ぷよぷよ記法 SVG変換ツール</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 28px;
+      }
+      .explanation {
+        background-color: #fffaed;
+        border-left: 4px solid #ffd980;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 0 4px 4px 0;
+      }
+      .explanation h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+      }
+      .explanation h2 .icon {
+        margin-right: 8px;
+      }
+      .explanation ul {
+        margin-top: 10px;
+        padding-left: 25px;
+      }
+      .explanation li {
+        margin-bottom: 6px;
+      }
+      .color-samples {
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+      }
+      .color-sample {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 10px;
+      }
+      .color-circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 5px;
+        display: inline-block;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      textarea {
+        width: 100%;
+        height: 200px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: monospace;
+        resize: vertical;
+      }
+      .buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      button {
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        border: none;
+      }
+      .convert-btn {
+        background-color: #4285f4;
+        color: white;
+      }
+      .download-btn {
+        background-color: #4caf50;
+        color: white;
+      }
+      .convert-btn:hover {
+        background-color: #3367d6;
+      }
+      .download-btn:hover {
+        background-color: #3d8b40;
+      }
+      .tabs {
+        display: flex;
+        margin-bottom: 0;
+        border-bottom: 1px solid #ddd;
+      }
+      .tab {
+        padding: 8px 16px;
+        cursor: pointer;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-bottom: none;
+        margin-right: 5px;
+        border-radius: 4px 4px 0 0;
+      }
+      .tab.active {
+        background-color: #fff;
+        border-bottom-color: white;
+        position: relative;
+        z-index: 1;
+      }
+      .output {
+        margin-top: 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        background-color: #f9f9f9;
+        min-height: 200px;
+      }
+      #svgOutput {
+        text-align: center;
+      }
+      #svgCode {
+        width: 100%;
+        height: 150px;
+        font-family: monospace;
+        white-space: pre;
+        overflow: auto;
+        border: none;
+        background: transparent;
+        resize: vertical;
+      }
+      .example-container {
+        margin-top: 30px;
+      }
+      .example-container h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+      }
+      .example {
+        cursor: pointer;
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #e6f3ff;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+      }
+      .example:hover {
+        background-color: #d0e8ff;
+      }
+      .copied {
+        background-color: #e6ffe6;
+        transition: background-color 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ぷよぷよ記法 SVG変換ツール</h1>
+      
+      <div class="explanation">
+        <h2><span class="icon">📝</span>記法について</h2>
+        <p>基本的な書き方：</p>
+        <ul>
+          <li><strong>> RB</strong> で次のぷよを指定（R=赤、G=緑、B=青、Y=黄、P=紫）</li>
+          <li>小文字(<strong>r, g, b</strong>など)で淡い色</li>
+          <li>数字(<strong>1-9</strong>)や丸数字(<strong>①-⑨</strong>)も使用可能</li>
+          <li><strong>---</strong> で次の状態へ</li>
+        </ul>
+        <div class="color-samples">
+          色サンプル：
+          <div class="color-sample"><span class="color-circle" style="background-color: #FF0000;"></span>R</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #00FF00;"></span>G</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #0000FF;"></span>B</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #FFFF00;"></span>Y</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #FF00FF;"></span>P</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #FFAAAA;"></span>r</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #AAFFAA;"></span>g</div>
+          <div class="color-sample"><span class="color-circle" style="background-color: #AAAAFF;"></span>b</div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="puyoInput">ぷよぷよ記法を入力してください：</label>
+        <textarea id="puyoInput" placeholder="例：
+> RB
+> GY
+
+......
+......
+......
+RR....
+
+---
+
+> GY
+> BP
+
+......
+......
+......
+RRG..."></textarea>
+      </div>
+      
+      <div class="buttons">
+        <button id="convertButton" class="convert-btn">SVGに変換</button>
+        <button id="downloadButton" class="download-btn">SVGをダウンロード</button>
+      </div>
+      
+      <div class="tabs">
+        <div id="previewTab" class="tab active">プレビュー</div>
+        <div id="codeTab" class="tab">SVGコード</div>
+      </div>
+      
+      <div id="outputContainer" class="output">
+        <div id="svgOutput"></div>
+        <textarea id="svgCode" style="display: none;"></textarea>
+      </div>
+      
+      <div class="example-container">
+        <h2>サンプル記法：</h2>
+        <div class="example" onclick="setExample(1)">
+          例1: 基本的な連鎖
+        </div>
+        <div class="example" onclick="setExample(2)">
+          例2: GTR
+        </div>
+        <div class="example" onclick="setExample(3)">
+          例3: 淡い色と数字の活用
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // PuyoPuyoRendererクラス
+      class PuyoPuyoRenderer {
+        constructor() {
+          this.colors = {
+            'R': '#FF0000', // 赤
+            'G': '#00FF00', // 緑
+            'B': '#0000FF', // 青
+            'Y': '#FFFF00', // 黄色
+            'P': '#FF00FF', // 紫
+            'r': '#FFAAAA', // 淡い赤
+            'g': '#AAFFAA', // 淡い緑
+            'b': '#AAAAFF', // 淡い青
+            'y': '#FFFFAA', // 淡い黄色
+            'p': '#FFAAFF', // 淡い紫
+            '.': '#EEEEEE'  // 空白
+          };
+          
+          // 数字もサポート
+          for (let i = 1; i <= 9; i++) {
+            this.colors[i.toString()] = '#AAAAAA';  // 数字は灰色
+          }
+          
+          this.cellSize = 30; // ぷよのセルサイズ(px)
+        }
+        
+        renderToSVG(text) {
+          const sections = text.split('---').map(s => s.trim()).filter(s => s);
+          let svg = '';
+          
+          // 全セクションの最大幅と総高さを計算
+          const sectionData = sections.map(section => {
+            const lines = section.split('\n').map(l => l.trim()).filter(l => l);
+            
+            // 盤面とネクストを分離
+            const nextPuyos = [];
+            const field = [];
+            
+            lines.forEach(line => {
+              if (line.startsWith('>')) {
+                nextPuyos.push(line.substring(1).trim());
+              } else {
+                field.push(line);
+              }
+            });
+            
+            // フィールドの幅（最も長い行から決定）
+            const fieldWidth = field.length > 0 ? Math.max(...field.map(line => line.length)) : 0;
+            
+            return {
+              nextPuyos,
+              field,
+              fieldWidth,
+              height: nextPuyos.length + field.length
+            };
+          });
+          
+          const maxWidth = Math.max(...sectionData.map(d => d.fieldWidth), 6); // 最小幅6（標準ぷよぷよフィールド幅）
+          let totalHeight = sectionData.reduce((sum, d, i) => 
+            sum + d.height + (i < sectionData.length - 1 ? 1 : 0), 0);
+          
+          // SVGの全体サイズ
+          const svgWidth = maxWidth * this.cellSize;
+          const svgHeight = totalHeight * this.cellSize;
+          
+          svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}">`;
+          
+          let yOffset = 0;
+          
+          sections.forEach((section, sectionIndex) => {
+            const { nextPuyos, field } = sectionData[sectionIndex];
+            
+            // ネクストぷよを描画
+            nextPuyos.forEach((pair, i) => {
+              for (let j = 0; j < pair.length; j++) {
+                const puyo = pair[j];
+                if (puyo !== ' ') {
+                  const cx = j * this.cellSize + this.cellSize / 2;
+                  const cy = yOffset * this.cellSize + this.cellSize / 2;
+                  const color = this.colors[puyo] || this.colors['.'];
+                  
+                  svg += `<circle cx="${cx}" cy="${cy}" r="${this.cellSize / 2 - 1}" fill="${color}" stroke="#333" stroke-width="1" />`;
+                  svg += `<text x="${cx}" y="${cy}" font-family="monospace" font-size="${this.cellSize / 2}" 
+                            text-anchor="middle" dominant-baseline="central" fill="#000">${puyo}</text>`;
+                }
+              }
+              yOffset++;
+            });
+            
+            // フィールドを描画
+            field.forEach((row, i) => {
+              for (let j = 0; j < row.length; j++) {
+                const puyo = row[j];
+                const cx = j * this.cellSize + this.cellSize / 2;
+                const cy = yOffset * this.cellSize + this.cellSize / 2;
+                const color = this.colors[puyo] || this.colors['.'];
+                
+                svg += `<circle cx="${cx}" cy="${cy}" r="${this.cellSize / 2 - 1}" fill="${color}" stroke="#333" stroke-width="1" />`;
+                svg += `<text x="${cx}" y="${cy}" font-family="monospace" font-size="${this.cellSize / 2}" 
+                          text-anchor="middle" dominant-baseline="central" fill="#000">${puyo}</text>`;
+              }
+              yOffset++;
+            });
+            
+            // セクションの区切り（最後のセクション以外）
+            if (sectionIndex < sections.length - 1) {
+              svg += `<line x1="0" y1="${yOffset * this.cellSize - this.cellSize / 2}" 
+                          x2="${svgWidth}" y2="${yOffset * this.cellSize - this.cellSize / 2}" 
+                          stroke="#333" stroke-width="2" />`;
+              yOffset++;
+            }
+          });
+          
+          svg += '</svg>';
+          
+          return svg;
+        }
+      }
+
+      // 現在のタブ（プレビューまたはコード）
+      let currentTab = 'preview';
+      let currentSvg = '';
+      
+      // イベントリスナーを設定
+      document.getElementById('convertButton').addEventListener('click', convertToSVG);
+      document.getElementById('downloadButton').addEventListener('click', downloadSVG);
+      document.getElementById('previewTab').addEventListener('click', () => switchTab('preview'));
+      document.getElementById('codeTab').addEventListener('click', () => switchTab('code'));
+      
+      // SVGへ変換する関数
+      function convertToSVG() {
+        const puyoNotation = document.getElementById('puyoInput').value;
+        
+        if (!puyoNotation.trim()) {
+          alert('ぷよぷよ記法を入力してください');
+          return;
+        }
+        
+        // クライアントサイドでの処理
+        const renderer = new PuyoPuyoRenderer();
+        currentSvg = renderer.renderToSVG(puyoNotation);
+        
+        document.getElementById('svgOutput').innerHTML = currentSvg;
+        document.getElementById('svgCode').value = currentSvg;
+        
+        // 現在のタブを反映
+        switchTab(currentTab);
+      }
+      
+      // SVGをダウンロードする関数
+      function downloadSVG() {
+        if (!currentSvg) {
+          alert('先にSVGに変換してください');
+          return;
+        }
+        
+        const blob = new Blob([currentSvg], {type: 'image/svg+xml'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'puyopuyo.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      
+      // タブ切り替え
+      function switchTab(tab) {
+        currentTab = tab;
+        
+        // タブのアクティブ状態を更新
+        document.getElementById('previewTab').className = tab === 'preview' ? 'tab active' : 'tab';
+        document.getElementById('codeTab').className = tab === 'code' ? 'tab active' : 'tab';
+        
+        // 対応するコンテンツを表示
+        if (tab === 'preview') {
+          document.getElementById('svgOutput').style.display = 'block';
+          document.getElementById('svgCode').style.display = 'none';
+        } else {
+          document.getElementById('svgOutput').style.display = 'none';
+          document.getElementById('svgCode').style.display = 'block';
+        }
+      }
+      
+      // サンプル例の設定
+      function setExample(number) {
+        let example = '';
+        
+        if (number === 1) {
+          example = `> RB
+> GY
+
+......
+......
+......
+RR....
+
+---
+
+> GY
+> BP
+
+......
+......
+......
+RRG...
+
+---
+
+> BP
+> RR
+
+......
+......
+......
+RRGY..`;
+        } else if (number === 2) {
+          example = `> GR
+> BY
+
+......
+......
+......
+......
+......
+
+---
+
+> BY
+> RR
+
+......
+......
+......
+......
+G.....
+
+---
+
+> RR
+> GB
+
+......
+......
+......
+......
+GR....
+
+---
+
+> GB
+> YR
+
+......
+......
+......
+......
+GRB...
+
+---
+
+> YR
+> BG
+
+......
+......
+......
+......
+GRBY..`;
+        } else if (number === 3) {
+          example = `> Rr
+> Gg
+
+......
+......
+......
+1234..
+
+---
+
+> Bb
+> Yy
+
+......
+......
+......
+1234r.
+
+---
+
+> Pp
+> 56
+
+......
+......
+......
+1234rg`;
+        }
+        
+        document.getElementById('puyoInput').value = example;
+        
+        // 例をクリックした際の視覚的フィードバック
+        const elements = document.getElementsByClassName('example');
+        for (let i = 0; i < elements.length; i++) {
+          elements[i].classList.remove('copied');
+        }
+        event.currentTarget.classList.add('copied');
+        setTimeout(function() {
+          event.currentTarget.classList.remove('copied');
+        }, 500);
+      }
+    </script>
+  </body>
+</html>
