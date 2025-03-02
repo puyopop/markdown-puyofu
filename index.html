@@ -186,7 +186,7 @@
           <li><strong>> RB</strong> で次のぷよを指定（R=赤、G=緑、B=青、Y=黄、P=紫）</li>
           <li>小文字(<strong>r, g, b</strong>など)で淡い色</li>
           <li>数字(<strong>1-9</strong>)や丸数字(<strong>①-⑨</strong>)も使用可能</li>
-          <li><strong>---</strong> で次の状態へ</li>
+          <li><strong>---</strong> で次の状態へ（前後に空行が必要）</li>
         </ul>
         <div class="color-samples">
           色サンプル：
@@ -220,7 +220,17 @@ RR....
 ......
 ......
 ......
-RRG..."></textarea>
+RRG...
+
+---
+
+> BP
+> RR
+
+......
+......
+......
+RRGY.."></textarea>
       </div>
       
       <div class="buttons">
@@ -279,7 +289,8 @@ RRG..."></textarea>
         }
         
         renderToSVG(text) {
-          const sections = text.split('---').map(s => s.trim()).filter(s => s);
+          // 改行で区切られた "---" を正規表現で検出して分割
+          const sections = text.split(/\n\s*---\s*\n/).map(s => s.trim()).filter(s => s);
           let svg = '';
           
           // 全セクションの最大幅と総高さを計算
