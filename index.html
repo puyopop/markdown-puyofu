@@ -174,6 +174,8 @@
         transition: background-color 0.3s;
       }
     </style>
+    <!-- SVG.js ライブラリの追加 -->
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
   </head>
   <body>
     <div class="container">
@@ -183,12 +185,13 @@
         <h2><span class="icon">📝</span>記法について</h2>
         <p>基本的な書き方：</p>
         <ul>
-          <li><strong>> RB</strong> で次のぷよを指定（R=赤、G=緑、B=青、Y=黄、P=紫）</li>
+          <li><strong>> RB</strong> で配ぷよを指定（R=赤、G=緑、B=青、Y=黄、P=紫）</li>
           <li>小文字(<strong>r, g, b</strong>など)で淡い色</li>
           <li>数字(<strong>1-9</strong>)や丸数字(<strong>①-⑨</strong>)も使用可能</li>
-          <li><strong>↓</strong> 矢印記号も使用可能（落下方向の指示などに）</li>
+          <li><strong>v</strong> 矢印記号も使用可能（落下方向の指示などに）</li>
           <li><strong># コメント</strong> で始まる行はコメント行（表示されません）</li>
-          <li><strong>---</strong> で次の状態へ（前後に空行が必要）</li>
+          <li><strong>---</strong> で次の状態へ</li>
+          <li>空行は無視されます</li>
         </ul>
         <div class="color-samples">
           色サンプル：
@@ -207,7 +210,7 @@
       
       <div class="form-group">
         <label for="puyoInput">ぷよぷよ記法を入力してください：</label>
-        <textarea id="puyoInput" placeholder="例：
+        <textarea id="puyoInput">#例：
 > RB
 > GY
 
@@ -234,7 +237,7 @@ RRG...
 ......
 ......
 ......
-RRGY.."></textarea>
+RRGY..</textarea>
       </div>
       
       <div class="buttons">
@@ -271,18 +274,18 @@ RRGY.."></textarea>
       class PuyoPuyoRenderer {
         constructor() {
           this.colors = {
-            'R': '#FF6B6B', // 赤（優しい色合い）
-            'G': '#4CAF50', // 緑（優しい色合い）
-            'B': '#5D9CEC', // 青（優しい色合い）
-            'Y': '#FFCE54', // 黄色（優しい色合い）
-            'P': '#AC92EC', // 紫（優しい色合い）
+            'R': '#FF6B6B', // 赤
+            'G': '#4CAF50', // 緑
+            'B': '#5D9CEC', // 青
+            'Y': '#FFCE54', // 黄色
+            'P': '#AC92EC', // 紫
             'r': '#FFCDD2', // 淡い赤
             'g': '#C8E6C9', // 淡い緑
             'b': '#BBDEFB', // 淡い青
             'y': '#FFF9C4', // 淡い黄色
             'p': '#E1BEE7', // 淡い紫
             '.': '#F5F5F5', // 空白
-            '↓': '#FFFFFF'  // 矢印（背景色は透明に近い白）
+            'v': '#FFFFFF'  // 下矢印            
           };
           
           // 数字もサポート
@@ -296,7 +299,6 @@ RRGY.."></textarea>
         renderToSVG(text) {
           // 改行で区切られた "---" を正規表現で検出して分割
           const sections = text.split(/\n\s*---\s*\n/).map(s => s.trim()).filter(s => s);
-          let svg = '';
           
           // 全セクションの最大幅と総高さを計算
           const sectionData = sections.map(section => {
@@ -336,13 +338,16 @@ RRGY.."></textarea>
           const svgWidth = maxWidth * this.cellSize;
           const svgHeight = totalHeight * this.cellSize;
           
-          svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}">
-                <defs>
-                  <pattern id="nextPattern" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-                    <rect width="10" height="10" fill="#f8f8f8"/>
-                    <line x1="0" y1="0" x2="0" y2="10" stroke="#eeeeee" stroke-width="2"/>
-                  </pattern>
-                </defs>`;
+          // SVG.jsを使用したSVG生成
+          const svgContainer = document.createElement('div');
+          const draw = SVG().addTo(svgContainer).size(svgWidth, svgHeight).viewbox(0, 0, svgWidth, svgHeight);
+          
+          // パターン定義
+          const defs = draw.defs();
+          const pattern = defs.pattern(10, 10, function(add) {
+            add.rect(10, 10).fill('#f8f8f8');
+            add.line(0, 0, 0, 10).stroke({ color: '#eeeeee', width: 2 });
+          }).transform({ rotate: 45 }).id('nextPattern');
           
           let yOffset = 0;
           
@@ -353,12 +358,19 @@ RRGY.."></textarea>
             if (nextPuyos.length > 0) {
               const nextHeight = nextPuyos.length * this.cellSize;
               const nextWidth = maxWidth * this.cellSize;
-              svg += `<rect x="0" y="${yOffset * this.cellSize}" width="${nextWidth}" height="${nextHeight}" 
-                        fill="url(#nextPattern)" stroke="#cccccc" stroke-width="1" />`;
+              draw.rect(nextWidth, nextHeight)
+                .move(0, yOffset * this.cellSize)
+                .fill('url(#nextPattern)')
+                .stroke({ color: '#cccccc', width: 1 });
               
               // ネクストぷよのラベルを追加
-              svg += `<text x="5" y="${yOffset * this.cellSize + 15}" font-family="sans-serif" font-size="12" 
-                        fill="#888888" font-weight="bold">NEXT</text>`;
+              draw.text('NEXT')
+                .move(5, yOffset * this.cellSize + 15)
+                .font({
+                  family: 'sans-serif',
+                  size: 12,
+                  weight: 'bold'
+                }).fill('#888888');
             }
             
             // ネクストぷよを描画
@@ -370,15 +382,31 @@ RRGY.."></textarea>
                   const cy = yOffset * this.cellSize + this.cellSize / 2;
                   const color = this.colors[puyo] || this.colors['.'];
                   
-                  if (puyo === '↓') {
+                  if (puyo === 'v') {
                     // 矢印の場合は特別な描画
-                    svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${this.cellSize * 0.8}" 
-                              text-anchor="middle" dominant-baseline="central" fill="#555" font-weight="bold">${puyo}</text>`;
+                    draw.text(puyo)
+                      .move(cx, cy)
+                      .font({
+                        family: 'sans-serif',
+                        size: this.cellSize * 0.8,
+                        weight: 'bold'
+                      })
+                      .fill('#555')
+                      .center(cx, cy);
                   } else {
-                    // 通常のぷよ（優しい色合いと薄い縁取り）
-                    svg += `<circle cx="${cx}" cy="${cy}" r="${this.cellSize / 2 - 1}" fill="${color}" stroke="#999" stroke-width="0.5" />`;
-                    svg += `<text x="${cx}" y="${cy}" font-family="monospace" font-size="${this.cellSize / 2}" 
-                              text-anchor="middle" dominant-baseline="central" fill="#555">${puyo}</text>`;
+                    // 通常のぷよ
+                    draw.circle(this.cellSize - 2)
+                      .center(cx, cy)
+                      .fill(color)
+                      .stroke({ color: '#999', width: 0.5 });
+                    draw.text(puyo)
+                      .move(cx, cy)
+                      .font({
+                        family: 'monospace',
+                        size: this.cellSize / 2
+                      })
+                      .fill('#555')
+                      .center(cx, cy);
                   }
                 }
               }
@@ -389,12 +417,19 @@ RRGY.."></textarea>
             if (field.length > 0) {
               const fieldHeight = field.length * this.cellSize;
               const fieldWidth = maxWidth * this.cellSize;
-              svg += `<rect x="0" y="${yOffset * this.cellSize}" width="${fieldWidth}" height="${fieldHeight}" 
-                        fill="#ffffff" stroke="#aaaaaa" stroke-width="1" />`;
+              draw.rect(fieldWidth, fieldHeight)
+                .move(0, yOffset * this.cellSize)
+                .fill('#ffffff')
+                .stroke({ color: '#aaaaaa', width: 1 });
               
               // フィールドのラベルを追加
-              svg += `<text x="5" y="${yOffset * this.cellSize + 15}" font-family="sans-serif" font-size="12" 
-                        fill="#888888" font-weight="bold">FIELD</text>`;
+              draw.text('FIELD')
+                .move(5, yOffset * this.cellSize + 15)
+                .font({
+                  family: 'sans-serif',
+                  size: 12,
+                  weight: 'bold'
+                }).fill('#888888');
             }
             
             // フィールドを描画
@@ -405,15 +440,31 @@ RRGY.."></textarea>
                 const cy = yOffset * this.cellSize + this.cellSize / 2;
                 const color = this.colors[puyo] || this.colors['.'];
                 
-                if (puyo === '↓') {
+                if (puyo === 'v') {
                   // 矢印の場合は特別な描画
-                  svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${this.cellSize * 0.8}" 
-                            text-anchor="middle" dominant-baseline="central" fill="#555" font-weight="bold">${puyo}</text>`;
+                  draw.text('↓')
+                    .move(cx, cy)
+                    .font({
+                      family: 'sans-serif',
+                      size: this.cellSize * 0.8,
+                      weight: 'bold'
+                    })
+                    .fill('#555')
+                    .center(cx, cy);
                 } else {
                   // 通常のぷよ
-                  svg += `<circle cx="${cx}" cy="${cy}" r="${this.cellSize / 2 - 1}" fill="${color}" stroke="#333" stroke-width="1" />`;
-                  svg += `<text x="${cx}" y="${cy}" font-family="monospace" font-size="${this.cellSize / 2}" 
-                            text-anchor="middle" dominant-baseline="central" fill="#000">${puyo}</text>`;
+                  draw.circle(this.cellSize - 2)
+                    .center(cx, cy)
+                    .fill(color)
+                    .stroke({ color: '#333', width: 1 });
+                  draw.text(puyo)
+                    .move(cx, cy)
+                    .font({
+                      family: 'monospace',
+                      size: this.cellSize / 2
+                    })
+                    .fill('#000')
+                    .center(cx, cy);
                 }
               }
               yOffset++;
@@ -421,16 +472,13 @@ RRGY.."></textarea>
             
             // セクションの区切り（最後のセクション以外）
             if (sectionIndex < sections.length - 1) {
-              svg += `<line x1="0" y1="${yOffset * this.cellSize}" 
-                          x2="${svgWidth}" y2="${yOffset * this.cellSize}" 
-                          stroke="#888" stroke-width="2" stroke-dasharray="5,3" />`;
+              draw.line(0, yOffset * this.cellSize, svgWidth, yOffset * this.cellSize)
+                .stroke({ color: '#888', width: 2, dasharray: '5,3' });
               yOffset++;
             }
           });
           
-          svg += '</svg>';
-          
-          return svg;
+          return svgContainer.innerHTML;
         }
       }
 
