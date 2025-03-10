@@ -294,6 +294,9 @@ RRGY..</textarea>
           }
           
           this.cellSize = 30; // ぷよのセルサイズ(px)
+          this.fieldBorderWidth = 2; // フィールドの境界線の太さ
+          this.gridLineColor = '#dddddd'; // グリッド線の色
+          this.nextPuyoSpacing = 2; // 配ぷよの間隔(px)
         }
         
         renderToSVG(text) {
@@ -344,9 +347,10 @@ RRGY..</textarea>
           
           // パターン定義
           const defs = draw.defs();
-          const pattern = defs.pattern(10, 10, function(add) {
-            add.rect(10, 10).fill('#f8f8f8');
-            add.line(0, 0, 0, 10).stroke({ color: '#eeeeee', width: 2 });
+          // NEXTエリア用の背景パターン
+          const nextPattern = defs.pattern(10, 10, function(add) {
+            add.rect(10, 10).fill('#f0f8ff');
+            add.line(0, 0, 10, 10).stroke({ color: '#e0e0ff', width: 1 });
           }).transform({ rotate: 45 }).id('nextPattern');
           
           let yOffset = 0;
@@ -356,35 +360,180 @@ RRGY..</textarea>
             
             // ネクストぷよの背景を描画
             if (nextPuyos.length > 0) {
-              const nextHeight = nextPuyos.length * this.cellSize;
-              const nextWidth = maxWidth * this.cellSize;
-              draw.rect(nextWidth, nextHeight)
+              // NEXTのブロック数を計算
+              const nextBlocks = nextPuyos.length;
+              // 各NEXTブロック幅は2セル（標準ぷよぷよの配ぷよ幅）
+              const nextWidth = 2 * this.cellSize;
+              // 全NEXTブロックの高さ
+              const nextHeight = nextBlocks * 2 * this.cellSize + (nextBlocks - 1) * this.nextPuyoSpacing * 2;
+              
+              // 背景全体の枠
+              draw.rect(maxWidth * this.cellSize, nextHeight)
                 .move(0, yOffset * this.cellSize)
                 .fill('url(#nextPattern)')
-                .stroke({ color: '#cccccc', width: 1 });
+                .stroke({ color: '#9999cc', width: 1.5, dasharray: '4,2' });
               
               // ネクストぷよのラベルを追加
-              draw.text('NEXT')
-                .move(5, yOffset * this.cellSize + 15)
+              const nextLabel = draw.text('NEXT')
+                .move(5, yOffset * this.cellSize + 5)
                 .font({
                   family: 'sans-serif',
                   size: 12,
                   weight: 'bold'
-                }).fill('#888888');
+                })
+                .fill('#5555aa');
+                
+              // ラベル背景
+              const labelBox = nextLabel.bbox();
+              draw.rect(labelBox.width + 10, labelBox.height + 4)
+                .move(labelBox.x - 5, labelBox.y - 2)
+                .fill('rgba(255, 255, 255, 0.7)')
+                .radius(3)
+                .before(nextLabel);
+              
+              // 各配ぷよペアを描画
+              nextPuyos.forEach((pair, i) => {
+                // 各配ぷよブロックの左位置（フィールドの幅に合わせる）
+                const blockX = (maxWidth / 4) * this.cellSize; // フィールド幅の中央に配置
+                const blockY = yOffset * this.cellSize + i * (2 * this.cellSize + this.nextPuyoSpacing * 2);
+                
+                // 配ぷよブロックの背景
+                draw.rect(nextWidth, 2 * this.cellSize)
+                  .move(blockX - this.cellSize, blockY)
+                  .fill('rgba(240, 240, 255, 0.6)')
+                  .stroke({ color: '#7777aa', width: 1 })
+                  .radius(5);
+                
+                // ブロック番号表示
+                draw.text(`${i + 1}`)
+                  .move(blockX - this.cellSize + 5, blockY + 5)
+                  .font({
+                    family: 'sans-serif',
+                    size: 10,
+                    weight: 'bold'
+                  })
+                  .fill('#5555aa');
+                
+                if (pair.length >= 1) {
+                  // 最初のぷよ（下）
+                  const puyo1 = pair[0];
+                  if (puyo1 !== ' ') {
+                    const cx = blockX;
+                    const cy = blockY + this.cellSize + this.cellSize / 2;
+                    const color1 = this.colors[puyo1] || this.colors['.'];
+                    
+                    // 影
+                    draw.circle(this.cellSize - 6)
+                      .center(cx + 1, cy + 1)
+                      .fill('rgba(0, 0, 0, 0.2)');
+                      
+                    // ぷよ
+                    draw.circle(this.cellSize - 4)
+                      .center(cx, cy)
+                      .fill(color1)
+                      .stroke({ color: '#444', width: 1 });
+                      
+                    // 文字
+                    draw.text(puyo1)
+                      .move(cx, cy)
+                      .font({
+                        family: 'monospace',
+                        size: this.cellSize / 2
+                      })
+                      .fill('#000')
+                      .center(cx, cy);
+                  }
+                }
+                
+                if (pair.length >= 2) {
+                  // 2番目のぷよ（上）
+                  const puyo2 = pair[1];
+                  if (puyo2 !== ' ') {
+                    const cx = blockX;
+                    const cy = blockY + this.cellSize / 2;
+                    const color2 = this.colors[puyo2] || this.colors['.'];
+                    
+                    // 影
+                    draw.circle(this.cellSize - 6)
+                      .center(cx + 1, cy + 1)
+                      .fill('rgba(0, 0, 0, 0.2)');
+                      
+                    // ぷよ
+                    draw.circle(this.cellSize - 4)
+                      .center(cx, cy)
+                      .fill(color2)
+                      .stroke({ color: '#444', width: 1 });
+                      
+                    // 文字
+                    draw.text(puyo2)
+                      .move(cx, cy)
+                      .font({
+                        family: 'monospace',
+                        size: this.cellSize / 2
+                      })
+                      .fill('#000')
+                      .center(cx, cy);
+                  }
+                }
+              });
+              
+              // yOffsetを更新（各配ぷよブロックごとにカウント）
+              yOffset += nextPuyos.length * 2;
             }
             
-            // ネクストぷよを描画
-            nextPuyos.forEach((pair, i) => {
-              for (let j = 0; j < pair.length; j++) {
-                const puyo = pair[j];
-                if (puyo !== ' ') {
+            // フィールドの背景と境界を描画
+            if (field.length > 0) {
+              const fieldHeight = field.length * this.cellSize;
+              const fieldWidth = maxWidth * this.cellSize;
+              
+              // グリッドを描画
+              for (let i = 0; i <= maxWidth; i++) {
+                draw.line(i * this.cellSize, yOffset * this.cellSize, i * this.cellSize, (yOffset + field.length) * this.cellSize)
+                  .stroke({ color: this.gridLineColor, width: 0.5 });
+              }
+              
+              for (let i = 0; i <= field.length; i++) {
+                draw.line(0, (yOffset + i) * this.cellSize, fieldWidth, (yOffset + i) * this.cellSize)
+                  .stroke({ color: this.gridLineColor, width: 0.5 });
+              }
+              
+              // フィールド全体の背景
+              draw.rect(fieldWidth, fieldHeight)
+                .move(0, yOffset * this.cellSize)
+                .fill('rgba(255, 255, 255, 0.5)')
+                .stroke({ color: '#3a3a3a', width: this.fieldBorderWidth });
+              
+              // フィールドのラベルを追加
+              const fieldLabel = draw.text('FIELD')
+                .move(5, yOffset * this.cellSize + 5)
+                .font({
+                  family: 'sans-serif',
+                  size: 12,
+                  weight: 'bold'
+                })
+                .fill('#444444');
+                
+              // ラベル背景
+              const labelBox = fieldLabel.bbox();
+              draw.rect(labelBox.width + 10, labelBox.height + 4)
+                .move(labelBox.x - 5, labelBox.y - 2)
+                .fill('rgba(255, 255, 255, 0.7)')
+                .radius(3)
+                .before(fieldLabel);
+            }
+            
+            // フィールドを描画
+            field.forEach((row, i) => {
+              for (let j = 0; j < row.length; j++) {
+                const puyo = row[j];
+                if (puyo !== '.') {  // 空白以外を描画
                   const cx = j * this.cellSize + this.cellSize / 2;
-                  const cy = yOffset * this.cellSize + this.cellSize / 2;
+                  const cy = (yOffset + i) * this.cellSize + this.cellSize / 2;
                   const color = this.colors[puyo] || this.colors['.'];
                   
                   if (puyo === 'v') {
                     // 矢印の場合は特別な描画
-                    draw.text(puyo)
+                    draw.text('↓')
                       .move(cx, cy)
                       .font({
                         family: 'sans-serif',
@@ -395,80 +544,29 @@ RRGY..</textarea>
                       .center(cx, cy);
                   } else {
                     // 通常のぷよ
-                    draw.circle(this.cellSize - 2)
+                    // 影をつける
+                    draw.circle(this.cellSize - 6)
+                      .center(cx + 1, cy + 1)
+                      .fill('rgba(0, 0, 0, 0.2)');
+                      
+                    draw.circle(this.cellSize - 4)
                       .center(cx, cy)
                       .fill(color)
-                      .stroke({ color: '#999', width: 0.5 });
+                      .stroke({ color: '#333', width: 1 });
+                      
                     draw.text(puyo)
                       .move(cx, cy)
                       .font({
                         family: 'monospace',
                         size: this.cellSize / 2
                       })
-                      .fill('#555')
+                      .fill('#000')
                       .center(cx, cy);
                   }
                 }
               }
-              yOffset++;
             });
-            
-            // フィールドの背景を描画
-            if (field.length > 0) {
-              const fieldHeight = field.length * this.cellSize;
-              const fieldWidth = maxWidth * this.cellSize;
-              draw.rect(fieldWidth, fieldHeight)
-                .move(0, yOffset * this.cellSize)
-                .fill('#ffffff')
-                .stroke({ color: '#aaaaaa', width: 1 });
-              
-              // フィールドのラベルを追加
-              draw.text('FIELD')
-                .move(5, yOffset * this.cellSize + 15)
-                .font({
-                  family: 'sans-serif',
-                  size: 12,
-                  weight: 'bold'
-                }).fill('#888888');
-            }
-            
-            // フィールドを描画
-            field.forEach((row, i) => {
-              for (let j = 0; j < row.length; j++) {
-                const puyo = row[j];
-                const cx = j * this.cellSize + this.cellSize / 2;
-                const cy = yOffset * this.cellSize + this.cellSize / 2;
-                const color = this.colors[puyo] || this.colors['.'];
-                
-                if (puyo === 'v') {
-                  // 矢印の場合は特別な描画
-                  draw.text('↓')
-                    .move(cx, cy)
-                    .font({
-                      family: 'sans-serif',
-                      size: this.cellSize * 0.8,
-                      weight: 'bold'
-                    })
-                    .fill('#555')
-                    .center(cx, cy);
-                } else {
-                  // 通常のぷよ
-                  draw.circle(this.cellSize - 2)
-                    .center(cx, cy)
-                    .fill(color)
-                    .stroke({ color: '#333', width: 1 });
-                  draw.text(puyo)
-                    .move(cx, cy)
-                    .font({
-                      family: 'monospace',
-                      size: this.cellSize / 2
-                    })
-                    .fill('#000')
-                    .center(cx, cy);
-                }
-              }
-              yOffset++;
-            });
+            yOffset += field.length;
             
             // セクションの区切り（最後のセクション以外）
             if (sectionIndex < sections.length - 1) {
